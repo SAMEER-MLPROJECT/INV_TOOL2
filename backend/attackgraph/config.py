@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
@@ -8,17 +9,25 @@ from pydantic import BaseModel, Field, field_validator
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _env_value(raw: str) -> str:
+    """Value of one .env line: surrounding quotes removed; an unquoted value ends at ' #' (a note after the value)."""
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+        return raw[1:-1]
+    return re.split(r"(?:^|\s+)#", raw, maxsplit=1)[0].strip()
+
+
 def load_env_file(path: Path | None = None) -> int:
     path = path or REPO_ROOT / ".env"
     if not path.is_file():
         return 0
     n = 0
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        key, value = key.strip(), value.strip().strip('"').strip("'")
+        key, value = key.strip(), _env_value(value)
         if key and key not in os.environ and value:
             os.environ[key] = value
             n += 1

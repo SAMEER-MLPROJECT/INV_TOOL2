@@ -180,7 +180,12 @@ no unsafe loaders) and the two small charts are plain SVG.
 Requirements: **Python 3.11+**. Node.js 20+ is needed only to rebuild the interface; the submission ZIP already
 contains the built interface in `frontend/dist`.
 
-One command (creates `.venv`, installs dependencies, builds the interface if needed and starts the server):
+**Quickest: unzip, then double-click `START.bat` (Windows) or `start.command` (macOS/Linux).** It checks Python,
+installs everything into a private `.venv`, creates `.env` with a fresh evaluator password (shown on the sign-in page)
+and opens the browser. Use `START_FOR_UNO_Q.bat` (or `./start.command --uno`) when the Arduino UNO Q must connect over
+Wi-Fi; it prints the `AGL_URL` to put on the board.
+
+Alternative one-command scripts (creates `.venv`, installs dependencies, builds the interface if needed and starts the server):
 
 ```bash
 ./scripts/run_local.sh                                          # Linux / macOS

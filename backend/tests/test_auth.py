@@ -160,3 +160,42 @@ def test_hardening_headers_and_hidden_docs(app):
     assert r.headers["cache-control"] == "no-store"
     assert c.get("/api/docs").status_code in (401, 404) and c.get("/api/openapi.json").status_code in (401, 404)
     assert c.get("/.well-known/security.txt").text.startswith("Contact:")
+
+
+def test_evaluator_accounts_follow_the_configured_password(auth_deploy):
+    """An account database left over from an earlier run must not lock evaluators out after the password changes."""
+    store = AuthStore(auth_deploy.auth_db)
+    create_app(store=store, deploy=auth_deploy)
+    store.create_org("Someone else", org_id="org_other")
+    store.create_user("their-user", "their-password-1", "org_other", "analyst")
+    new_pw = "a-new-demo-password"
+    app2 = create_app(store=store, deploy=auth_deploy.model_copy(update={"demo_password": new_pw}))
+    login(app2, "analyst", new_pw)
+    login(app2, "client-b", new_pw)
+    bad = TestClient(app2, raise_server_exceptions=False).post(
+        "/api/auth/login", json={"username": "viewer", "password": PW}, headers=H)
+    assert bad.status_code == 401
+    login(app2, "their-user", "their-password-1")      # self-created accounts are untouched
+
+
+def test_short_demo_password_is_reported_not_fatal(auth_deploy):
+    app = create_app(store=AuthStore(auth_deploy.auth_db), deploy=auth_deploy.model_copy(update={"demo_password": "short"}))
+    assert TestClient(app).get("/api/health").status_code == 200
+
+
+def test_env_file_notes_quotes_and_bom(tmp_path, monkeypatch):
+    """Windows users edit .env in Notepad: notes after values, quotes and a UTF-8 BOM must not change the values."""
+    from attackgraph.config import load_env_file
+    env = tmp_path / ".env"
+    env.write_text("﻿AGL_T_BACKEND=neo4j   # memory or neo4j\nAGL_T_EMPTY=                # default path\n"
+                   "AGL_T_QUOTED=\"pa ss #1\"\nAGL_T_HASH=abc#def\nAGL_T_EMPTY=second\n", encoding="utf-8")
+    for k in ("AGL_T_BACKEND", "AGL_T_EMPTY", "AGL_T_QUOTED", "AGL_T_HASH"):
+        monkeypatch.delenv(k, raising=False)
+    load_env_file(env)
+    import os
+    assert os.environ["AGL_T_BACKEND"] == "neo4j"
+    assert os.environ["AGL_T_EMPTY"] == "second"          # an empty line never wins; the next value is used
+    assert os.environ["AGL_T_QUOTED"] == "pa ss #1"
+    assert os.environ["AGL_T_HASH"] == "abc#def"
+    for k in ("AGL_T_BACKEND", "AGL_T_EMPTY", "AGL_T_QUOTED", "AGL_T_HASH"):
+        monkeypatch.delenv(k, raising=False)

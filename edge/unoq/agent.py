@@ -230,6 +230,16 @@ def run(args: argparse.Namespace) -> int:
         log("first envelope was not accepted; check the URL, device id and secret")
     else:
         led.show(started.get("led_level", 0))
+    if args.simulate_drop:
+        n = max(1, min(int(args.simulate_drop), 1000))
+        with sender.lock:
+            sender.seq += n          # as if n signed envelopes had been deleted in transit
+            sender._save()
+        out = sender.send([{"event_type": "tamper_test", "timestamp": now_iso(), "severity": "medium",
+                            "detail": f"operator-simulated loss of {n} envelope(s) (--simulate-drop); "
+                                      "the server should raise an integrity alert"}])
+        log(f"simulated {n} dropped envelope(s): " + ("sent; check Evidence for integrity_alert" if out else "FAILED"))
+        return 0 if out else 1
     if args.self_test:
         out = sender.send([{"event_type": "tamper_test", "timestamp": now_iso(), "severity": "medium",
                             "detail": "controlled test event triggered by the operator (--self-test)"}])
@@ -291,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--heartbeat", type=float, default=15.0)
     ap.add_argument("--no-logins", action="store_true")
     ap.add_argument("--self-test", action="store_true", help="send one controlled tamper_test event and exit")
+    ap.add_argument("--simulate-drop", type=int, default=0, metavar="N",
+                    help="demo: skip N sequence numbers (as if N envelopes were deleted), send one labelled event, exit")
     return run(ap.parse_args(argv))
 
 
