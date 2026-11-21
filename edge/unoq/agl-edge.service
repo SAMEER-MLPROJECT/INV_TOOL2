@@ -1,0 +1,16 @@
+# Optional: run the agent on the UNO Q's Debian host (USB + SSH/console logins, no LED).
+# sudo cp agl-edge.service /etc/systemd/system/ && sudo systemctl enable --now agl-edge
+[Unit]
+Description=AttackGraph Lens edge agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/arduino/agl/agent.py
+Environment=AGL_STATE=/home/arduino/agl/state.json
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

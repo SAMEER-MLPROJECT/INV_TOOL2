@@ -1,0 +1,70 @@
+{
+  "dataset": "OTRF Security-Datasets, compound/LSASS_campaign_03 (Metasploit, LSASS memory dump via comsvcs.dll)",
+  "license": "MIT, Copyright (c) 2021 Open Threat Research Forge",
+  "source": "https://github.com/OTRF/Security-Datasets/tree/master/datasets/compound/LSASS_campaign_03",
+  "metadata": "https://github.com/OTRF/Security-Datasets/blob/master/datasets/compound/_metadata/LSASS_campaign_03.yaml",
+  "originals": {
+    "metasploit_comsvcs_lsass_memory_dump.json": {
+      "sha256": "43e755d5b2379960b2567286a06ade47ee2c4142221231553491a686351380dc",
+      "bytes": 89445270
+    },
+    "metasploit_comsvcs_lsass_memory_dump.pcapng": {
+      "sha256": "96032f9171e0986afc543c4951861c13ecce2abc2f5558e12a14e105ed12b51c",
+      "bytes": 57585636
+    },
+    "conn.log": {
+      "sha256": "88c8629858547b76ac1729150612ba542f2c8f4ceb77c7fd844111c73c456f0c",
+      "bytes": 14919
+    },
+    "dns.log": {
+      "sha256": "e16dfd046b7b1317decd9e5bd77e03c2ab1d99a77e424740b8eaabbde916af99",
+      "bytes": 18956
+    },
+    "http.log": {
+      "sha256": "034f7699dd942ba9e19e84f4695dbc466f5c8626e14b5f77919095fe1da44335",
+      "bytes": 869
+    },
+    "files.log": {
+      "sha256": "a7b00950b6ae5d5a4f01562a6d612927be27f0a921e53c23773cc9cad184b180",
+      "bytes": 739
+    },
+    "kerberos.log": {
+      "sha256": "197046ba0e5790db75ad40b3535b35e08ba152ea076086720fc320ffe96be3d8",
+      "bytes": 1225
+    }
+  },
+  "derived": {
+    "host_events_used.jsonl": "the original host log lines that AttackGraph Lens' Windows importer uses, byte-for-byte unchanged (the other lines are noise the importer filters and counts; upload the original file to see the filter report)",
+    "capture_headers_only.pcap": "every packet of the original capture, each cut to its first 256 bytes; sizes are read from the IP/TCP headers so volumes are preserved"
+  },
+  "files_in_repo": {
+    "capture_headers_only.pcap": {
+      "sha256": "ceb74a06c4e1b4c0f3ce4eb841b408ed6a9fc802df416f4079903fe02910389b",
+      "bytes": 1689148
+    },
+    "conn.log": {
+      "sha256": "88c8629858547b76ac1729150612ba542f2c8f4ceb77c7fd844111c73c456f0c",
+      "bytes": 14919
+    },
+    "dns.log": {
+      "sha256": "e16dfd046b7b1317decd9e5bd77e03c2ab1d99a77e424740b8eaabbde916af99",
+      "bytes": 18956
+    },
+    "files.log": {
+      "sha256": "a7b00950b6ae5d5a4f01562a6d612927be27f0a921e53c23773cc9cad184b180",
+      "bytes": 739
+    },
+    "host_events_used.jsonl": {
+      "sha256": "e445f8de7dcb0547d1ccbbf762e8ec1f840a52ec7121538e6ce086e04daf14ba",
+      "bytes": 935457
+    },
+    "http.log": {
+      "sha256": "034f7699dd942ba9e19e84f4695dbc466f5c8626e14b5f77919095fe1da44335",
+      "bytes": 869
+    },
+    "kerberos.log": {
+      "sha256": "197046ba0e5790db75ad40b3535b35e08ba152ea076086720fc320ffe96be3d8",
+      "bytes": 1225
+    }
+  }
+}

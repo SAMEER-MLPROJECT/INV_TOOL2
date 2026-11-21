@@ -1,0 +1,11 @@
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+data/uploads
+data/exports
+.env
+.git
+*.zip
+data/*.sqlite3
+frontend/node_modules

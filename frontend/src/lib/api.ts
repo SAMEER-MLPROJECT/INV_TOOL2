@@ -1,0 +1,135 @@
+import type {
+  BlastResult,
+  EntitySummary,
+  EventRow,
+  FileSummary,
+  GraphData,
+  Incident,
+  IncidentListItem,
+  PathResult,
+  Settings,
+  Summary,
+  Backend,
+  ContainmentPlan,
+  WhatIfResult,
+  Deviation,
+  LiveStatus,
+  Me,
+  AuthConfig,
+  Device,
+  Regulatory,
+  AdminOverview,
+} from "./types";
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+export const UNAUTHORIZED_EVENT = "agl:unauthorized";
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("X-Requested-With", "agl");
+  const res = await fetch(path, { ...init, headers, credentials: "same-origin" });
+  if (res.status === 401 && !path.startsWith("/api/auth/")) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (typeof body.detail === "string") msg = body.detail;
+      else if (Array.isArray(body.detail)) msg = body.detail.map((d: { msg: string }) => d.msg).join("; ");
+    } catch {
+    }
+    throw new ApiError(res.status, msg);
+  }
+  return (await res.json()) as T;
+}
+
+const enc = encodeURIComponent;
+const json = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+export const api = {
+  health: () => call<{ status: string; version: string; auth: string }>("/api/health"),
+  authConfig: () => call<AuthConfig>("/api/auth/config"),
+  me: () => call<Me>("/api/auth/me"),
+  login: (username: string, password: string) => call<Me>("/api/auth/login", json("POST", { username, password })),
+  signup: (organisation: string, username: string, password: string, load_sample: boolean) =>
+    call<Me>("/api/auth/signup", json("POST", { organisation, username, password, load_sample })),
+  logout: () => call<unknown>("/api/auth/logout", { method: "POST" }),
+  orgUsers: () => call<{ username: string; role: string; created_at: string }[]>("/api/org/users"),
+  addUser: (username: string, password: string, role: string) => call<unknown>("/api/org/users", json("POST", { username, password, role })),
+  devices: () => call<Device[]>("/api/org/devices"),
+  addDevice: (name: string, location: string) => call<Device & { secret: string; note: string }>("/api/org/devices", json("POST", { name, location })),
+  regulatory: (id: string) => call<Regulatory>(`/api/incidents/${enc(id)}/regulatory`),
+  admin: (id: string) => call<AdminOverview>(`/api/incidents/${enc(id)}/admin`),
+  neo4jCounts: () => call<Record<string, number>>("/api/backend/neo4j/counts"),
+  neo4jProvenance: (id: string) => call<{ records: { uid: string; time: string; source: string; file: string; sha256: string; row: number }[] }>(`/api/backend/neo4j/provenance/${enc(id)}`),
+  summary: () => call<Summary>("/api/summary"),
+  rules: () => call<Record<string, { kind: string; title: string; description: string }>>("/api/rules"),
+  sources: () => call<{ name: string; label: string; required_fields: string[]; context: boolean }[]>("/api/sources"),
+  datasets: () => call<{ files: FileSummary[]; cross_file: Record<string, number> }>("/api/datasets"),
+  loadSample: () => call<{ files: FileSummary[] }>("/api/datasets/sample", { method: "POST" }),
+  loadReal: () => call<{ files: FileSummary[]; dataset: string }>("/api/datasets/real", { method: "POST" }),
+  clear: () => call<{ status: string }>("/api/datasets/clear", { method: "POST" }),
+  upload: (files: File[], sourceType: string, mode: "append" | "replace") => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append("files", f));
+    fd.append("source_type", sourceType);
+    fd.append("mode", mode);
+    return call<{ files: FileSummary[] }>("/api/datasets/upload", { method: "POST", body: fd });
+  },
+  entities: (type?: string, q?: string) => {
+    const p = new URLSearchParams();
+    if (type) p.set("type", type);
+    if (q) p.set("q", q);
+    return call<EntitySummary[]>(`/api/entities?${p}`);
+  },
+  entity: (id: string) => call<any>(`/api/entities/${enc(id)}`),
+  setStatus: (id: string, status: string | null) => call<unknown>(`/api/entities/${enc(id)}/status`, json("POST", { status })),
+  relationship: (id: string) => call<any>(`/api/relationships/${enc(id)}`),
+  event: (uid: string) => call<any>(`/api/events/${enc(uid)}`),
+  events: (params: Record<string, string | number | undefined>) => {
+    const p = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v !== undefined && v !== "" && p.set(k, String(v)));
+    return call<{ total: number; offset: number; limit: number; events: EventRow[] }>(`/api/events?${p}`);
+  },
+  graph: (params: Record<string, string | number | boolean | undefined>) => {
+    const p = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v !== undefined && v !== "" && p.set(k, String(v)));
+    return call<GraphData>(`/api/graph?${p}`);
+  },
+  paths: (body: { source: string; targets?: string[] | null; max_hops: number; max_paths?: number; rel_types?: string[] | null; since?: string | null }) =>
+    call<PathResult>("/api/paths", json("POST", body)),
+  blast: (id: string, hops: number, temporal: boolean, includeProcesses: boolean, since?: string) => {
+    const p = new URLSearchParams({ hops: String(hops), temporal: String(temporal), include_processes: String(includeProcesses) });
+    if (since) p.set("since", since);
+    return call<BlastResult>(`/api/blast-radius/${enc(id)}?${p}`);
+  },
+  incidents: () => call<IncidentListItem[]>("/api/incidents"),
+  incident: (id: string) => call<Incident>(`/api/incidents/${enc(id)}`),
+  reportUrl: (id: string, format: "html" | "md" | "json") => `/api/incidents/${enc(id)}/report?format=${format}`,
+  containment: (id: string, at?: string) =>
+    call<ContainmentPlan>(`/api/incidents/${enc(id)}/containment${at ? `?at=${enc(at)}` : ""}`),
+  whatIf: (source: string, actions: string[], at?: string | null) =>
+    call<WhatIfResult>("/api/whatif", json("POST", { source, actions, at: at || null })),
+  deviations: (limit = 20) =>
+    call<{ reference_d2: number; suspicion_cap: number; models: Record<string, any>; deviations: Deviation[] }>(`/api/deviations?limit=${limit}`),
+  liveStatus: () => call<LiveStatus>("/api/stream/status"),
+  startReplay: (start: string | null, end: string | null, speed: number) =>
+    call<LiveStatus["replay"]>("/api/stream/replay", json("POST", { start, end, speed })),
+  stopReplay: () => call<LiveStatus["replay"]>("/api/stream/replay/stop", { method: "POST" }),
+  pushEvents: (records: Record<string, unknown>[], source_type?: string) =>
+    call<{ accepted: number; rejected: number }>("/api/stream/events", json("POST", { records, source_type })),
+  manifest: () => call<any>("/api/evidence/manifest"),
+  settings: () => call<Settings>("/api/settings"),
+  saveSettings: (s: Settings) => call<Settings>("/api/settings", json("PUT", s)),
+  resetSettings: () => call<Settings>("/api/settings/reset", { method: "POST" }),
+  backend: () => call<Backend>("/api/backend"),
+  neo4jSync: () => call<Backend>("/api/backend/neo4j/sync", { method: "POST" }),
+};

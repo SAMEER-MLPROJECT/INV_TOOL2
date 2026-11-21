@@ -1,0 +1,36 @@
+# Render blueprint: New -> Blueprint -> pick this repository. Fill the "sync: false" values in the dashboard.
+services:
+  - type: web
+    name: attackgraph-lens
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: AGL_GRAPH_BACKEND
+        value: neo4j
+      - key: NEO4J_URI
+        sync: false          # neo4j+s://xxxxxxxx.databases.neo4j.io  (AuraDB Free)
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: NEO4J_DATABASE
+        value: neo4j
+      - key: AGL_DEMO_PASSWORD
+        sync: false          # password for the evaluator accounts (analyst, itadmin, viewer, client-b)
+      - key: AGL_SHOW_DEMO_LOGINS
+        value: "1"
+      - key: AGL_EDGE_DEVICES
+        sync: false          # [{"id":"dev_unoq01","name":"UNOQ-RACK-01","location":"Server room A","secret":"<64 hex>"}]
+      - key: AGL_COOKIE_SECURE
+        value: "1"
+      - key: AGL_FORWARDED_ALLOW_IPS
+        value: "*"
+      - key: AGL_CORS_ORIGINS
+        value: ""
+      - key: AGL_MAX_CAPTURE_MB
+        value: "60"          # free plan has 512 MB RAM; the original 57 MB OTRF capture still fits
+      - key: AGL_ENABLE_DOCS
+        value: "0"
+      - key: AGL_SECURITY_CONTACT
+        sync: false          # mailto:your-team-email
