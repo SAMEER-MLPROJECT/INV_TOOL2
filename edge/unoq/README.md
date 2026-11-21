@@ -60,6 +60,25 @@ Create a new app in Arduino App Lab and paste:
 The LED matrix shows the organisation's top incident priority: one dot = Low, rising bars = Moderate/High, full
 blinking bars = Critical. Login monitoring may be unavailable inside the App Lab container; the agent says so.
 
+## Hosted deployment (Render) instead of a laptop
+
+* Provision the device on the server with `AGL_EDGE_DEVICES` (Render dashboard), not through the UI: Render's disk is
+  wiped on restart, the environment is not. Use the same id and secret in the board's `edge_config.json`, with
+  `"AGL_URL": "https://<service>.onrender.com"`.
+* The board needs internet (phone hotspot is the most reliable at a venue) and a correct clock (`date -u`).
+* While the agent runs, its 15-second heartbeats keep the free Render service awake.
+* After a Render restart the board continues without a false integrity alert (the server starts a fresh chain).
+
+## Demo: show tamper detection
+
+```bash
+python3 agent.py --simulate-drop 3
+```
+
+The agent skips three sequence numbers, as if three signed envelopes had been deleted, and sends one event labelled as
+operator-simulated. The server raises **Edge integrity warning: sequence gap: 3 envelope(s) missing** (severity 0.75).
+Say clearly that it is simulated. Restart the normal agent afterwards; it continues from the new sequence number.
+
 ## 3. Check it worked
 
 * Agent log: `usb_connect: 0781:5567 Cruzer Blade (NOT on the allow-list)`.

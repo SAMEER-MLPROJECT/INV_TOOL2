@@ -143,9 +143,14 @@ def create_app(ws: Workspace | None = None, load_sample: bool = True, store: Aut
         store = store or AuthStore(deploy.auth_db, deploy.max_orgs)
         registry = OrgRegistry(deploy, store)
         if deploy.demo_password:
-            created = bootstrap_demo(store, deploy.demo_password)
+            try:
+                created = bootstrap_demo(store, deploy.demo_password)
+            except AuthError as exc:
+                created = []
+                log.error("evaluator accounts not set up: %s", exc)
             if created:
                 log.info("created demo organisations and accounts: %s", ", ".join(a["username"] for a in created))
+            log.info("evaluator accounts use the current AGL_DEMO_PASSWORD")
         elif not store.org_count():
             log.warning("no organisations yet: sign up in the UI, or set AGL_DEMO_PASSWORD to create demo accounts")
         if deploy.edge_devices:

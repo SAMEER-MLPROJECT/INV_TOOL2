@@ -44,8 +44,22 @@ def main() -> int:
     args = ap.parse_args()
     load_env_file()
     deploy = DeploymentConfig(graph_backend="neo4j")
-    if not deploy.neo4j_uri:
-        print("Set NEO4J_URI, NEO4J_USERNAME and NEO4J_PASSWORD (or put them in .env) first.")
+    missing = [k for k, v in (("NEO4J_URI", deploy.neo4j_uri), ("NEO4J_USERNAME", deploy.neo4j_user),
+                              ("NEO4J_PASSWORD", deploy.neo4j_password)) if not v]
+    if missing:
+        env = ROOT / ".env"
+        print(f"Missing: {', '.join(missing)}.")
+        print(f"Settings file read: {env}  ({'found' if env.is_file() else 'NOT FOUND'})")
+        for stray in (ROOT / ".env.txt", ROOT / ".env.example"):
+            if stray.is_file() and stray.name == ".env.txt":
+                print(f"Found {stray.name}: Notepad added '.txt'. Rename it to .env (delete the old .env first).")
+        if env.is_file():
+            keys = {ln.split("=", 1)[0].strip(): bool(ln.split("=", 1)[1].split(" #")[0].strip())
+                    for ln in env.read_text(encoding="utf-8-sig").splitlines() if "=" in ln and not ln.lstrip().startswith("#")}
+            for k in ("AGL_GRAPH_BACKEND", "NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD"):
+                state = "has a value" if keys.get(k) else ("is empty" if k in keys else "is not in the file")
+                print(f"  {k} {state}")
+        print("Edit it with:  notepad .env   (fill the lines in, Ctrl+S), then run this again.")
         return 2
     org = "verify_" + secrets.token_hex(4)
     print(f"Neo4j: {deploy.neo4j_uri.split('@')[-1]}  database={deploy.neo4j_database}  test organisation={org}\n")

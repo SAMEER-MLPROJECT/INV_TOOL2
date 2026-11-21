@@ -153,6 +153,17 @@ class AuthStore:
             raise AuthError(409, "that username is taken") from None
         return uid
 
+    def org_exists(self, org_id: str) -> bool:
+        return bool(self._q("SELECT 1 FROM orgs WHERE id = ?", (org_id,)))
+
+    def user_org(self, username: str) -> str | None:
+        rows = self._q("SELECT org_id FROM users WHERE username = ?", (username.strip().lower(),))
+        return rows[0][0] if rows else None
+
+    def set_password(self, username: str, password: str) -> None:
+        salt, digest = hash_password(password)
+        self._q("UPDATE users SET pw_salt = ?, pw_hash = ? WHERE username = ?", (salt, digest, username.strip().lower()))
+
     def users(self, org_id: str) -> list[dict]:
         rows = self._q("SELECT username, role, created_at FROM users WHERE org_id = ? ORDER BY created_at", (org_id,))
         return [{"username": r[0], "role": r[1], "created_at": r[2]} for r in rows]
@@ -229,15 +240,28 @@ DEMO_ORG_B = "org_demo_client_b"
 
 
 def bootstrap_demo(store: AuthStore, password: str) -> list[dict]:
-    if store.org_count():
-        return []
-    org_a = store.create_org("Demo NBFC (synthetic data)", sample=True, org_id=DEMO_ORG_A)
-    org_b = store.create_org("Second client (empty)", sample=False, org_id=DEMO_ORG_B)
-    accounts = [("analyst", org_a, "analyst"), ("itadmin", org_a, "itadmin"), ("viewer", org_a, "viewer"),
-                ("client-b", org_b, "analyst")]
+    """Make the evaluator accounts match AGL_DEMO_PASSWORD on every start: create the demo organisations and
+    accounts that are missing and reset existing evaluator accounts to the configured password. Accounts that people
+    created themselves are never touched; a username taken by another organisation is skipped with a warning."""
+    if len(password) < MIN_PASSWORD:
+        raise AuthError(422, f"AGL_DEMO_PASSWORD must be at least {MIN_PASSWORD} characters")
+    if not store.org_exists(DEMO_ORG_A):
+        store.create_org("Demo NBFC (synthetic data)", sample=True, org_id=DEMO_ORG_A)
+    if not store.org_exists(DEMO_ORG_B):
+        store.create_org("Second client (empty)", sample=False, org_id=DEMO_ORG_B)
+    accounts = [("analyst", DEMO_ORG_A, "analyst"), ("itadmin", DEMO_ORG_A, "itadmin"), ("viewer", DEMO_ORG_A, "viewer"),
+                ("client-b", DEMO_ORG_B, "analyst")]
+    created = []
     for username, org, role in accounts:
-        store.create_user(username, password, org, role)
-    return [{"username": u, "role": r} for u, _, r in accounts]
+        owner = store.user_org(username)
+        if owner is None:
+            store.create_user(username, password, org, role)
+            created.append({"username": username, "role": role})
+        elif owner == org:
+            store.set_password(username, password)
+        else:
+            log.warning("evaluator account %s not created: the username belongs to another organisation", username)
+    return created
 
 
 def session_expiry() -> datetime:

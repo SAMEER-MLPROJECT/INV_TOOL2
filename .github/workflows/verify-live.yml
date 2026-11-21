@@ -1,0 +1,54 @@
+# Manual check of the live deployment, run in GitHub's cloud (Actions -> "Verify live deployment" -> Run workflow).
+# Needs repository secrets (Settings -> Secrets and variables -> Actions): APP_URL, AGL_DEMO_PASSWORD,
+# NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, NEO4J_DATABASE. Secret values are masked in the log.
+name: Verify live deployment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Neo4j checks against the real AuraDB instance
+        env:
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_DATABASE: ${{ secrets.NEO4J_DATABASE }}
+        run: python scripts/verify_neo4j.py
+
+      - name: Wake the live service (free plan sleeps when idle)
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null "$APP_URL/api/health" && exit 0
+            sleep 10
+          done
+          echo "service did not answer /api/health" && exit 1
+
+      - name: End-to-end checks against the live URL
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          AGL_DEMO_PASSWORD: ${{ secrets.AGL_DEMO_PASSWORD }}
+        run: python scripts/smoke_deploy.py "$APP_URL"
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-reports
+          path: data/exports/*.json
+          if-no-files-found: ignore
