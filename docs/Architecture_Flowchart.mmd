@@ -1,0 +1,101 @@
+%%{init: {"theme": "dark", "themeVariables": {"background": "#0B0F17", "primaryColor": "#151C2A", "primaryTextColor": "#E8ECF2", "primaryBorderColor": "#5CC8FF", "lineColor": "#9AA6B8", "fontFamily": "Arial", "fontSize": "14px", "clusterBkg": "#121826", "clusterBorder": "#2C3850", "edgeLabelBackground": "#151C2A"}, "flowchart": {"htmlLabels": false, "wrappingWidth": 260}}}%%
+flowchart TB
+  subgraph L1["1 · Telemetry ingestion"]
+    direction LR
+    S1["Identity logs<br/>Windows Security"]
+    S2["Endpoint / EDR<br/>Sysmon"]
+    S3["Firewall · Zeek<br/>packet capture"]
+    S4[DNS]
+    S5[Database audit]
+    S6[SIEM alerts]
+    S7["Memory forensics<br/>Volatility 3"]
+    S8[Asset inventory]
+    S9["Arduino UNO Q<br/>server-room sensor"]
+  end
+
+  subgraph L2["2 · Validation and normalisation"]
+    direction LR
+    V1["Multi-format ingestion<br/>CSV · JSON · JSONL · Zeek · PCAP"]
+    V2["Schema validation<br/>UTC timestamps · clock correction"]
+    V3["Duplicate and ID-conflict detection"]
+    V4["IP to host resolution"]
+    V5["Event provenance<br/>source-file SHA-256"]
+    V6["Signed device envelopes<br/>HMAC · replay · gap checks"]
+  end
+
+  subgraph L3["3 · Temporal knowledge graph"]
+    direction LR
+    G["Entity nodes · typed relationships · event occurrences<br/>observed vs inferred · time context · evidence references"]
+  end
+
+  subgraph ST["Neo4j AuraDB · evidence store (system of record)"]
+    direction LR
+    N1["Persist<br/>SourceFile · Event · Entity<br/>Incident · Verdict · MERGE"]
+    N2["Restore<br/>workspace rebuilt after restart"]
+    N3["Isolate<br/>every query scoped to one organisation"]
+    N4["Prove<br/>entity → events → file, row, SHA-256"]
+    N5["Cypher 25 allReduce<br/>time-ordered path cross-check"]
+  end
+
+  subgraph L4["4 · Analytical engines (in-process NetworkX temporal engine)"]
+    direction LR
+    E1["Temporal attack-path discovery<br/>cross-checked in Neo4j"]
+    E2["Suspicion scoring<br/>14 ATT&CK detection rules"]
+    E3["Mahalanobis behavioural deviation<br/>(supporting signal, capped at 0.45)"]
+    E4[Blast radius and evidence tiers]
+    E5[Incident correlation]
+    E6[Six-channel corroboration]
+    E7["Competing hypotheses (ACH)"]
+    E8[Explainable risk scoring]
+  end
+
+  subgraph L5["5 · Decision and simulation"]
+    direction LR
+    D1[Ranked attack paths]
+    D2[Rejected-path explanations]
+    D3[Blast-radius classification]
+    D4[Correlated incident reconstruction]
+    D5[Counterfactual containment planner]
+    D6[Residual-risk comparison]
+  end
+
+  subgraph L6["6 · Output and interaction (sign-in, roles, isolated organisations)"]
+    direction LR
+    O1[Attack graph view]
+    O2[Incident investigation]
+    O3[Evidence explorer]
+    O4[Live monitor]
+    O5["IT admin<br/>infrastructure view"]
+    O6["Regulator-ready draft<br/>CERT-In · RBI · DPDP"]
+    O7[Reports and evidence manifests]
+    O8[Advisory containment recommendations]
+  end
+
+  subgraph LIVE["Live data path"]
+    direction LR
+    P1["SIEM / log forwarder<br/>UNO Q agent"] --> P2["POST /api/stream/events<br/>POST /api/edge/events"] --> P3[Validation and normalisation] --> P4["Micro-batch graph update<br/>every 0.4 s"] --> P5[Server-Sent Events] --> P6[Dashboard refresh]
+  end
+
+  S1 ~~~ S2 ~~~ S3 ~~~ S4 ~~~ S5 ~~~ S6 ~~~ S7 ~~~ S8 ~~~ S9
+  V1 ~~~ V2 ~~~ V3 ~~~ V4 ~~~ V5 ~~~ V6
+  N1 ~~~ N2 ~~~ N3 ~~~ N4 ~~~ N5
+  E1 ~~~ E2 ~~~ E3 ~~~ E4 ~~~ E5 ~~~ E6 ~~~ E7 ~~~ E8
+  D1 ~~~ D2 ~~~ D3 ~~~ D4 ~~~ D5 ~~~ D6
+  O1 ~~~ O2 ~~~ O3 ~~~ O4 ~~~ O5 ~~~ O6 ~~~ O7 ~~~ O8
+
+  L1 --> L2 --> L3 --> L4 --> L5 --> L6
+  L3 <-- "write-through · restore at start" --> ST
+  ST -. "Cypher 25 cross-check: both engines must agree on each path" .-> L4
+  LIVE -. "same validation, micro-batch updates" .-> L3
+
+  classDef core fill:#222C3F,stroke:#5CC8FF,stroke-width:3px,color:#E8ECF2;
+  classDef md fill:#151C2A,stroke:#F5A524,stroke-width:2px,stroke-dasharray:5 4,color:#F5A524;
+  classDef neo fill:#142A22,stroke:#4AD991,stroke-width:2px,color:#E8ECF2;
+  classDef live fill:#151C2A,stroke:#F5A524,color:#E8ECF2;
+  classDef edge fill:#151C2A,stroke:#5CC8FF,stroke-width:2px,color:#E8ECF2;
+  class G core;
+  class E3 md;
+  class N1,N2,N3,N4,N5 neo;
+  class P1,P2,P3,P4,P5,P6 live;
+  class S9,V6 edge;
+  style ST fill:#0F1D18,stroke:#4AD991,stroke-width:2px,color:#4AD991
