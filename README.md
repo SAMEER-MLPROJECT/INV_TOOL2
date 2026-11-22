@@ -146,7 +146,7 @@ AttackGraph Lens, and NFSU has not developed, endorsed or reviewed this project.
 
 ## Architecture
 
-![Architecture](docs/architecture.png)
+![Architecture](docs/Architecture_Flowchart.mmd)
 
 Six layers around one temporal knowledge graph:
 
