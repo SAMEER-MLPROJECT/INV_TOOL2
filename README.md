@@ -1,6 +1,11 @@
 # AttackGraph Lens
 ## LIVE PROTOTYPE URL : https://inv-tool2.onrender.com/
 
+Sign in with the evaluator accounts listed on the sign-in page (analyst, IT admin, viewer), or sign up to get a
+private organisation. The free hosting plan sleeps when idle, so the first load can take about a minute.
+Team **EigenThinkers** · partner technologies: **Neo4j** (AuraDB evidence store) and **Arduino UNO Q** (signed
+server-room sensor).
+
 
 > **Finale build (21–22 Nov 2026).** Sign-in with roles and isolated organisations, a persistent Neo4j evidence graph
 > (write-through, restore after restart, Cypher 25 path cross-check), signed Arduino UNO Q edge telemetry, an IT
@@ -53,6 +58,7 @@ synthetic data) · **Presentation:** [`submission/AttackGraph_Lens_T2_Final.pdf`
 [Sample workflow](#sample-workflow) · [Neo4j](#neo4j) · [Testing](#testing-and-validation) ·
 [Project layout](#project-layout) · [Limitations](#known-limitations) ·
 [AI use and acknowledgements](#ai-use-disclosure-and-acknowledgements)
+[Market and business model](#market-and-business-model) · [Finale validation](#finale-validation)
 
 ## What is new
 
@@ -72,6 +78,27 @@ Not merely a graph of possible connections: an evidence-backed reconstruction of
 happened, and why. Temporal graphs, graph traversal, Mahalanobis distance, alert correlation and counterfactual
 analysis are established techniques and are not claimed as inventions; the contribution is their integration.
 Details: [docs/NOVELTY.md](docs/NOVELTY.md).
+
+## Market and business model
+
+**Why now.** CERT-In requires incidents to be reported within 6 hours of noticing them; IBM's Cost of a Data Breach
+2025 report puts the average breach in India at about ₹22 crore; CERT-In handled 20.4 lakh incidents in 2024, up from
+13.9 lakh in 2022. DPDP rule 7 adds a 72-hour breach report from May 2027.
+
+**Who.** First user: the SOC or incident-response analyst at a mid-size NBFC or fintech (a team of 2–5 with SIEM and
+EDR, no attack-graph tool). Payer: the CISO, compliance officer or DPO who signs the regulator report. Also served:
+IT admins and MSSPs.
+
+| Market | Size | Basis |
+|---|---|---|
+| TAM | USD 2.8 bn (2025), USD 5.7 bn by 2030 | India MDR and SOC market (Ken Research) |
+| SAM | ₹261 crore a year | 10,869 RBI-regulated entities (9,291 NBFCs, 1,457 urban co-operative banks, 121 scheduled commercial banks) × entry price |
+| SOM | ₹2.4 crore ARR | 100 customers in 3 years, about 0.9 % of SAM (plan) |
+
+**Pricing (hypothesis, to be validated):** ₹2.4 lakh per organisation per year for up to 5 analysts plus onboarding;
+MSSPs ₹5,000 per client per month. **Position:** SIEM and XDR suites collect and alert; BloodHound shows possible
+privilege paths; AttackGraph Lens sits on the logs a firm already keeps and shows what did happen, with proof, in a
+form a small team can file with a regulator. No new agents or data lake: a pilot starts with an upload.
 
 ## Team track record
 
@@ -254,6 +281,9 @@ planted data-quality problems. Counts: **1,258 rows read → 1,251 accepted** (5
 7. **Multichannel**: the path and incident views show which channels saw each step.
 8. **Behavioural deviations**: the C2 beacon, 412 MB egress and 48,211-row read stand out; the nightly backup also
    deviates but stays below the threshold.
+9. **Infrastructure (Arduino UNO Q)**: plug a USB stick into the server-room hub. The UNO Q agent sends a signed,
+   hash-chained event; it appears next to the incident's servers and the LED matrix shows the incident level.
+   Deleting the sensor's events shows up as a sequence-gap integrity warning. Setup: [edge/unoq/README.md](edge/unoq/README.md).
 
 ## Neo4j (optional)
 
@@ -294,6 +324,16 @@ principal path, the rejected backup route, the attacker vs admin tiers, the plan
 Timings (medians on the synthetic dataset, one machine): ingest and build 88 ms, path query 2.3 ms, 4-hop temporal
 blast radius 0.4 ms. No accuracy, precision, recall or F1 is claimed: the only labels are synthetic. Details:
 [docs/VALIDATION_REPORT.md](docs/VALIDATION_REPORT.md).
+
+### Finale validation
+
+Finale build (22 Nov 2026): **151 tests pass** (140 unit, integration, API, live and known-answer tests plus 11 browser
+tests), 93 % statement coverage of `attackgraph/`. On the real recorded attack (OTRF LSASS_campaign_03),
+`scripts/validate_real_data.py` passes **9/9 checks**: 8/8 observable ground-truth techniques detected, a 7-hour host
+clock error corrected, 56.8 MB of exfiltration found only in the packet capture, and the external-attacker hypothesis
+ranked first. `scripts/smoke_deploy.py` passes **17/17** checks against a running deployment (sign-in, roles,
+organisation isolation, security headers, real-data load, mixed PCAP + Zeek + Windows upload). These figures supersede
+the round-1 numbers above.
 
 ## Project layout
 
