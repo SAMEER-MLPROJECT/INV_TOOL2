@@ -285,7 +285,7 @@ planted data-quality problems. Counts: **1,258 rows read → 1,251 accepted** (5
    hash-chained event; it appears next to the incident's servers and the LED matrix shows the incident level.
    Deleting the sensor's events shows up as a sequence-gap integrity warning. Setup: [edge/unoq/README.md](edge/unoq/README.md).
 
-## Neo4j (optional)
+## Neo4j 
 
 Neo4j is the persistent evidence store; the in-process temporal engine (NetworkX) does the analysis. With
 `AGL_GRAPH_BACKEND=neo4j` the app:
