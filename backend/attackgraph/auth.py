@@ -153,6 +153,14 @@ class AuthStore:
             raise AuthError(409, "that username is taken") from None
         return uid
 
+    def register_organisation(self, name: str, username: str, password: str, sample: bool, client: str) -> str:
+        """Create the workspace, its first analyst and the sign-in session together."""
+        with self._lock, self._db:
+            self._db.execute("BEGIN IMMEDIATE")
+            org_id = self.create_org(name, sample=sample)
+            self.create_user(username, password, org_id, "analyst")
+            return self.authenticate(username, password, client)
+
     def org_exists(self, org_id: str) -> bool:
         return bool(self._q("SELECT 1 FROM orgs WHERE id = ?", (org_id,)))
 

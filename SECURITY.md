@@ -8,27 +8,26 @@ affected version. We aim to acknowledge reports within 7 days.
 
 ## Intended deployment
 
-AttackGraph Lens is a prototype for analysts working on their own machine. It has **no authentication**. By default
-it binds to `127.0.0.1`; do not expose it to a network without an authenticating reverse proxy and TLS.
+The hosted API requires a session and checks the user's role and organisation for workspace operations. Use HTTPS
+and set `AGL_COOKIE_SECURE=1`. For an invite-only deployment, set `AGL_ALLOW_SIGNUP=0` and create individual
+accounts for reviewers.
 
-Uploaded log files may contain sensitive information (user names, hosts, IP addresses). They are processed in memory;
-exported reports are written to `data/exports/`, which is git-ignored. Delete exports you do not need.
+The Blueprint sets `AGL_SHOW_DEMO_LOGINS=1` for public demonstrations. In that mode the sign-in page and
+`/api/auth/config` publish the shared evaluator password. Set it to `0` before deploying a private workspace.
+Rotate the evaluator password if it was previously displayed.
+
+## Evidence and credentials
+
+Uploaded files and exported reports can contain usernames, hosts, IP addresses and original event records.
+The optional Neo4j backend retains evidence by organisation. SQLite stores accounts, sessions and device state.
+Protect both stores and keep real uploads, exports, database files and credentials out of Git.
 
 ## Built-in controls
 
-- Upload allow-list (`.csv`, `.json`, `.jsonl`, `.ndjson`), per-file size limit (default 20 MB), bounded reads,
-  record limit, UTF-8 validation.
-- Filenames are sanitised (directory components and unsafe characters removed); no user-chosen path is written.
-- Files are parsed with the standard-library `csv` and `json` modules only: never executed, imported, unpickled or
-  evaluated.
-- Neo4j queries are parameterised; labels/relationship types come from fixed enumerations; hop bounds are validated.
-- Credentials are read from environment variables (or a git-ignored `.env`), are never returned by the API and are
-  excluded from error messages and logs.
-- Unexpected errors return a reference id without stack traces; details go to the server log only.
-- Graph-expansion limits (hops, search budget, candidate cap, view size) bound resource use.
-- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
-
-## Secrets hygiene
-
-Never commit `.env`, keys or database passwords. `.gitignore` excludes them; the repository was scanned for secrets
-before publication (see `docs/DEVELOPMENT_LOG.md`).
+- Session cookies use HttpOnly and SameSite=Strict. The login and signup endpoints throttle repeated attempts.
+- Browser requests that change API state require the `X-Requested-With: agl` header. The edge ingest endpoint
+  authenticates signed device envelopes.
+- The upload endpoint bounds file count and file size. Packet captures have a separate per-file limit.
+- Graph queries have hop and expansion limits. The Neo4j adapter binds query parameters.
+- The HTTP middleware sets a content security policy, frame and MIME-type protections, and HSTS on HTTPS.
+  API responses passing through the middleware carry `Cache-Control: no-store`.

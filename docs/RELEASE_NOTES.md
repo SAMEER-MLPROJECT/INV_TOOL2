@@ -28,7 +28,3 @@ The attached submission ZIP contains the pre-built UI, so Node.js is not require
 105 automated tests passing (incl. 6 browser end-to-end), 95 % statement coverage, strict TypeScript build.
 Synthetic data only; no detection-accuracy claim. Neo4j adapter implemented but not validated against a live
 AuraDB instance. See `docs/VALIDATION_REPORT.md` and `docs/LIMITATIONS.md`.
-
-## AI assistance
-Developed with substantial assistance from Anthropic Claude under the team's direction, see
-`docs/AI_AND_THIRD_PARTY_DISCLOSURE.md`.

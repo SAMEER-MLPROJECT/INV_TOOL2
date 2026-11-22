@@ -50,7 +50,7 @@ synthetic data) · **Presentation:** [`submission/AttackGraph_Lens_T2_Final.pdf`
 [Installation](#installation-and-execution) · [Configuration](#environment-configuration) ·
 [Sample workflow](#sample-workflow) · [Neo4j](#neo4j-optional) · [Testing](#testing-and-validation) ·
 [Project layout](#project-layout) · [Limitations](#known-limitations) ·
-[AI use and acknowledgements](#ai-use-disclosure-and-acknowledgements)
+[Project credits](#project-credits)
 
 ## What is new
 
@@ -177,8 +177,11 @@ no unsafe loaders) and the two small charts are plain SVG.
 
 ## Installation and execution
 
-Requirements: **Python 3.11+**. Node.js 20+ is needed only to rebuild the interface; the submission ZIP already
-contains the built interface in `frontend/dist`.
+Use Python 3.11 or newer and Node.js 22. From a source checkout, build the browser interface once before starting the launcher:
+
+```bash
+cd frontend && npm ci && npm run build && cd ..
+```
 
 **Quickest: unzip, then double-click `START.bat` (Windows) or `start.command` (macOS/Linux).** It checks Python,
 installs everything into a private `.venv`, creates `.env` with a fresh evaluator password (shown on the sign-in page)
@@ -192,7 +195,7 @@ Alternative one-command scripts (creates `.venv`, installs dependencies, builds 
 powershell -ExecutionPolicy Bypass -File scripts\run_local.ps1  # Windows
 ```
 
-Then open **http://127.0.0.1:8000**. The synthetic dataset loads automatically. API documentation: `/api/docs`.
+Open **http://127.0.0.1:8000** and sign in. The built-in analyst workspace starts with synthetic data. Interactive API documentation is disabled by default.
 
 Manual steps:
 
@@ -205,7 +208,7 @@ cd backend && python -m attackgraph serve
 
 Docker: `docker compose up --build`. Render: New → Blueprint → this repository (`render.yaml`).
 After deploying, check the live URL end to end:
-`AGL_DEMO_PASSWORD=... python scripts/smoke_deploy.py https://<your-app>` (17 checks).
+`AGL_DEMO_PASSWORD=... python scripts/smoke_deploy.py https://<your-app>` (18 checks over HTTPS).
 
 Command line, without the interface:
 
@@ -260,7 +263,7 @@ Neo4j is the persistent evidence store; the in-process temporal engine (NetworkX
 
 * writes every uploaded file, event, entity, relationship, incident and analyst verdict to Neo4j, scoped by
   organisation (`backend/attackgraph/store/neo4j_store.py`, parameterised `UNWIND $rows` batches, no wipe on sync);
-* rebuilds each organisation's workspace from Neo4j at start, so a restart loses nothing;
+* restores persisted evidence when an organisation opens its workspace. Accounts and device records are stored separately in SQLite.
 * runs every path search a second time in Neo4j with a Cypher 25 `allReduce` time-ordering query and shows whether
   both methods agree (Attack Paths, "Neo4j cross-check");
 * answers provenance questions: which files and records mention an entity.
@@ -281,17 +284,18 @@ is done with `scripts/verify_neo4j.py`; until its report passes, no live-Neo4j c
 
 ```bash
 pip install -r requirements-dev.txt
+cd frontend && npm ci && npm run build && cd ..
 cd backend
-pytest -m "not e2e"                                       # 99 unit, integration, API, live and known-answer tests
-python -m playwright install chromium && pytest -m e2e    # 6 browser tests (needs frontend/dist)
-cd ../frontend && npm run typecheck
+pytest -m "not e2e"
+python -m playwright install chromium
+pytest -m e2e
+cd ..
+python scripts/validate_real_data.py
 ```
 
-Last run: **105 passed, 0 failed**, 95 % statement coverage of `attackgraph/`. The known-answer tests check the
-principal path, the rejected backup route, the attacker vs admin tiers, the planted bad rows and the evidence hashes.
-Timings (medians on the synthetic dataset, one machine): ingest and build 88 ms, path query 2.3 ms, 4-hop temporal
-blast radius 0.4 ms. No accuracy, precision, recall or F1 is claimed: the only labels are synthetic. Details:
-[docs/VALIDATION_REPORT.md](docs/VALIDATION_REPORT.md).
+The backend tests check temporal path ordering, blast-radius evidence tiers, organisation isolation and evidence
+hashes. The browser suite exercises the analyst and IT administrator workflows. The recorded-data checks use one
+OTRF incident. Its ground truth and the observed results are in the [validation report](docs/REAL_DATA_VALIDATION.md).
 
 ## Project layout
 
@@ -312,19 +316,13 @@ File-by-file map, with each T2.1 requirement and judging dimension traced to cod
 
 ## Known limitations
 
-Synthetic data only, so no real-world detection-accuracy claim. Neo4j, Docker and CI were not run against live
-services. Single-process, in-memory state. Live mode recomputes the graph per micro-batch, which is fine at prototype
-scale but needs incremental updates for very large streams. No authentication on the API, so bind it to localhost.
-Full list: [docs/LIMITATIONS.md](docs/LIMITATIONS.md). Security policy: [SECURITY.md](SECURITY.md).
+The recorded-data validation covers one OTRF attack. A detection-accuracy estimate would require a larger labelled
+dataset. The app reads Volatility 3 JSON output. Live micro-batches rebuild the graph in memory, so performance at
+enterprise scale still needs measurement. The hosted app requires sign-in. Account and device records need a persistent
+SQLite volume to survive a host disk reset. See the [finale build report](docs/FINALE_BUILD_REPORT.md) and
+[security policy](SECURITY.md).
 
-## AI-use disclosure and acknowledgements
+## Project credits
 
-This codebase, the dataset generator, tests and documentation were produced with substantial assistance from an AI
-coding assistant (Anthropic Claude) working under the team's direction during the hackFront league. It is a new
-implementation and does not reuse code, data, results or material from the team's earlier projects. Details and the
-complete third-party list with licences: [docs/AI_AND_THIRD_PARTY_DISCLOSURE.md](docs/AI_AND_THIRD_PARTY_DISCLOSURE.md).
-
-Built on FastAPI, Pydantic, Uvicorn, NetworkX, NumPy, the Neo4j Python driver, React, React Flow, dagre, Tailwind CSS,
-Vite, lucide, Inter and JetBrains Mono. Thank you to their maintainers.
-
-Licence: MIT (see [LICENSE](LICENSE)).
+See the [development disclosure and third-party licences](docs/AI_AND_THIRD_PARTY_DISCLOSURE.md).
+The project is distributed under the [MIT licence](LICENSE).

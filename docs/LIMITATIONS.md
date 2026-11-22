@@ -1,4 +1,7 @@
-# Limitations
+# Prototype limitations
+
+This document records the original prototype. For the finale build, including roles, organisation isolation,
+OTRF validation and Neo4j persistence, see the [finale build report](FINALE_BUILD_REPORT.md).
 
 AttackGraph Lens is a competition prototype. These limits are stated so that evaluators and future users do not
 over-read its results.

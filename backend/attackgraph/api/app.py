@@ -251,9 +251,9 @@ def create_app(ws: Workspace | None = None, load_sample: bool = True, store: Aut
             raise HTTPException(403, "sign-up is disabled on this deployment")
         if not store.signup_limiter.hit(f"signup:{_client(request)}"):
             raise HTTPException(429, "too many sign-ups from this address; try later")
-        org_id = store.create_org(body.organisation, sample=body.load_sample)
-        store.create_user(body.username, body.password, org_id, "analyst")
-        token = store.authenticate(body.username, body.password, _client(request))
+        token = store.register_organisation(
+            body.organisation, body.username, body.password, sample=body.load_sample, client=_client(request)
+        )
         resp = JSONResponse(store.user_for_token(token).public())
         _set_session(resp, request, token)
         return resp

@@ -111,10 +111,12 @@ def test_signup_creates_isolated_org_and_logout(app):
                                           "password": "a-long-password", "load_sample": False}, headers=H)
     assert r.status_code == 200 and r.json()["org"]["name"] == "Acme Finance"
     assert c.get("/api/summary").json()["events"] == 0
+    registered_orgs = app.state.store.orgs()
     assert c.post("/api/auth/signup", json={"organisation": "X Y", "username": "acme.soc", "password": "a-long-password"},
                   headers=H).status_code == 409
     assert c.post("/api/auth/signup", json={"organisation": "Short pw", "username": "shorty", "password": "short"},
                   headers=H).status_code == 422
+    assert app.state.store.orgs() == registered_orgs
     c.post("/api/auth/logout", headers=H)
     assert c.get("/api/summary").status_code == 401
 

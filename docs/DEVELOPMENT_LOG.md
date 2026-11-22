@@ -1,7 +1,7 @@
 # Development log
 
-All work below happened on 2026-10-31 (IST) in a fresh sandboxed environment with AI assistance (see
-AI_AND_THIRD_PARTY_DISCLOSURE.md). No earlier project code or data was present or used.
+This log records the prototype build on 31 October 2026 (IST). The finale changes are described in the
+[finale build report](FINALE_BUILD_REPORT.md).
 
 ## Phase A: inspection
 - Read the supplied execution directive (problem T2.1 GraphOps, judging dimensions, required modules).
