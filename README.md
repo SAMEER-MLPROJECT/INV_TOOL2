@@ -44,7 +44,7 @@ security teams.
 
 ![Overview](docs/screenshots/01_overview.png)
 
-**Demo video:** [`demo/attackgraph_lens_demo.mp4`](demo/attackgraph_lens_demo.mp4) (4 min 52 s, real application,
+**Demo video ( ROUND 1 ):** [`demo/attackgraph_lens_demo.mp4`](demo/attackgraph_lens_demo.mp4) (4 min 52 s, real application,
 synthetic data) · **Presentation:** [`submission/AttackGraph_Lens_T2_Final.pdf`](submission/AttackGraph_Lens_T2_Final.pdf)
 ([PPTX](submission/AttackGraph_Lens_T2_Final.pptx))
 
