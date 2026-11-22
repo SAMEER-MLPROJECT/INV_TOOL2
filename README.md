@@ -113,7 +113,7 @@ AttackGraph Lens, and NFSU has not developed, endorsed or reviewed this project.
   becomes "suspected" on its own.
 - **Containment planner and what-if simulation**: counterfactual graph at time `T`, adversary footholds at `T`, a
   greedy verified plan with redundancy pruning, before and after exposure, and an interactive simulator.
-- **Optional Neo4j / AuraDB backend**: implemented and unit-tested against a recording driver (see [status](#neo4j-optional)).
+- ** Neo4j / AuraDB backend **: implemented and unit-tested against a recording driver (see [status](#neo4j-optional)).
 
 ## Architecture
 
