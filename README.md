@@ -48,7 +48,7 @@ synthetic data) · **Presentation:** [`submission/AttackGraph_Lens_T2_Final.pdf`
 [What is new](#what-is-new) · [Team track record](#team-track-record) · [Features](#features) ·
 [Architecture](#architecture) · [How it decides](#how-it-decides) · [Screenshots](#screenshots) ·
 [Installation](#installation-and-execution) · [Configuration](#environment-configuration) ·
-[Sample workflow](#sample-workflow) · [Neo4j](#neo4j-optional) · [Testing](#testing-and-validation) ·
+[Sample workflow](#sample-workflow) · [Neo4j](#neo4j) · [Testing](#testing-and-validation) ·
 [Project layout](#project-layout) · [Limitations](#known-limitations) ·
 [AI use and acknowledgements](#ai-use-disclosure-and-acknowledgements)
 
